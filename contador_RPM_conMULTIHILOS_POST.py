@@ -37,9 +37,10 @@ def conexion_wifi():                                   #FUNCION de conexion al w
         lista = conexion.scan()                        # scanea las redes wifi disponibles
         for red in lista:
             print(red[0].decode())                     # crea una lista con las redes disponibles
-        conexion.connect("TP-Link_A3C8","77131478")    # se conecta a la red, se debe ingresar aqui usuario y clave de la red conocida
+#        conexion.connect("TP-Link_A3C8","77131478")    # se conecta a la red, se debe ingresar aqui usuario y clave de la red conocida
 #        conexion.connect("prueba","12345678")
 #        conexion.connect("gus","854317gm")
+        conexion.connect("gustav","854317gm")
         while not conexion.isconnected():
             print(".")                                 # mientras no haya coneccion imprime un .
             utime.sleep(1)            
@@ -97,51 +98,51 @@ def hilo_conteo_rpm():
             print(rpm,'RPM')
 _thread.start_new_thread(hilo_conteo_rpm,())   
    
-def hilo_conteo():                          #  <<<< bucle while de trabajo de MULTI-HILO >>>>
-    global entrada
-    global salida
-    global cont
-    global sensor1
-    global sensor2
-   
-    while (True):
-        sensor1=int(boton_sensor1.value())          # sensa el estado del pin 22
-        sensor2=int(boton_sensor2.value())                # sensa el estado del pin 23        
-        utime.sleep(0.1)
-        if (sensor1==0 and salida==0):
-            entrada=1
-        if (entrada==1 and sensor2==0):
-            utime.sleep(0.5)
-            print("entrando")
-            print("*******************")
-            entrada=0
-            salida=0
-            sensor1=1
-            sensor2=1
-            cont+=1
-            print("cont: " + str(cont))
-            print("sensor1= "+str(sensor1))
-            print("sensor2= "+str(sensor2))
-            print("entrada= "+str(entrada))
-            print("salida= "+str(salida))
-            
-        if (sensor2==0 and entrada==0):
-            salida=1
-        if (salida==1 and sensor1==0):
-            utime.sleep(0.5)
-            print("saliendo")
-            print("-----------------")
-            entrada=0
-            salida=0
-            sensor1=1
-            sensor2=1
-            cont-=1
-            print("cont: " + str(cont))
-            print("sensor1= "+str(sensor1))
-            print("sensor2= "+str(sensor2))
-            print("entrada= "+str(entrada))
-            print("salida= "+str(salida))
-_thread.start_new_thread(hilo_conteo,())
+# def hilo_conteo():                          #  <<<< bucle while de trabajo de MULTI-HILO >>>>
+#     global entrada
+#     global salida
+#     global cont
+#     global sensor1
+#     global sensor2
+#    
+#     while (True):
+#         sensor1=int(boton_sensor1.value())          # sensa el estado del pin 22
+#         sensor2=int(boton_sensor2.value())                # sensa el estado del pin 23        
+#         utime.sleep(0.1)
+#         if (sensor1==0 and salida==0):
+#             entrada=1
+#         if (entrada==1 and sensor2==0):
+#             utime.sleep(0.5)
+#             print("entrando")
+#             print("*******************")
+#             entrada=0
+#             salida=0
+#             sensor1=1
+#             sensor2=1
+#             cont+=1
+#             print("cont: " + str(cont))
+#             print("sensor1= "+str(sensor1))
+#             print("sensor2= "+str(sensor2))
+#             print("entrada= "+str(entrada))
+#             print("salida= "+str(salida))
+#             
+#         if (sensor2==0 and entrada==0):
+#             salida=1
+#         if (salida==1 and sensor1==0):
+#             utime.sleep(0.5)
+#             print("saliendo")
+#             print("-----------------")
+#             entrada=0
+#             salida=0
+#             sensor1=1
+#             sensor2=1
+#             cont-=1
+#             print("cont: " + str(cont))
+#             print("sensor1= "+str(sensor1))
+#             print("sensor2= "+str(sensor2))
+#             print("entrada= "+str(entrada))
+#             print("salida= "+str(salida))
+# _thread.start_new_thread(hilo_conteo,())
 
 ###########################################################################################################    
 
@@ -228,15 +229,21 @@ while (continuar1):                              #  <<<< bucle while principal >
         
         dato_tarjeta='tarjeta5'                     #       <<<==========   nombre de la tarjeta desde donde se envian los datos      
         #################################### sensor dht #####################################
+#         s.measure()
+#         temperatura= s.temperature()
+#         humedad= s.humidity()
+#         print("temperatura: "+str(temperatura)+"°C")
+#         print("humedad relativa: "  +str(humedad)+"%")
+#         utime.sleep(1)
         
-        temperatura=int(sensor1.value())            # sensa el estado del pin 22
-        humedad=int(sensor2.value())            # sensa el estado del pin 23
+        temperatura=5            # sensa el estado del pin 22
+        humedad=rpm             # sensa el estado del pin 23
         print("sensor1: "+str(temperatura))
         print("sensor2: "  +str(humedad))
         utime.sleep(1)
-                             
+                         
         
- 
+        
         #####################################################################################
         gc.collect()                                # limpia la basura de la memoria ram
         print(gc. mem_free ( ))                     # imprime cuanta memoria hay disponible
@@ -287,11 +294,10 @@ while (continuar1):                              #  <<<< bucle while principal >
             print("realizando peticion POST")
             cabezera={'Content-Type':'application/x-www-form-urlencoded'}    # cabezera de la pagina a enviar los datos del formulario                                                                                                                    # tiempo de muestreo
             
+            #envio_datos= urequests.post('https://iotgus.000webhostapp.com//prueba_recibe2.php',data=datos,headers=cabezera)  # envio de datos metodo post
+            #envio_datos= urequests.post('http://10.0.3.29/sistemademonitoreo/prueba_recibe2.php',data=datos,headers=cabezera)  # envio de datos metodo post
+            envio_datos= urequests.post('https://talleratlas.com/monitoreo_lasamericas/prueba_recibe2.php',data=datos,headers=cabezera)
             
-            #envio_datos= urequests.post('https://ingenieriamcy.000webhostapp.com/prueba_recibe2.php',data=datos,headers=cabezera)  # envio de datos metodo post
-            envio_datos= urequests.post('https://talleratlas.com/monitoreo_lasamericas/monitoreo.php',data=datos,headers=cabezera)  # envio de datos metodo post
-            
-
             utime.sleep(10)
             print(envio_datos.status_code)  # imprime codigo de respuesta
             print(envio_datos.text)         # imprime la respuesta de la pagina
@@ -310,3 +316,4 @@ while (continuar1):                              #  <<<< bucle while principal >
                 contador=0                                     # vuelve a cero el contador de envios fallidos
 ###########################################################################################################################  
         wdt.feed()                               # <<<<====  activa el impulso para el watchdog timer "IMPORTANTISIMO", fin del programa
+
