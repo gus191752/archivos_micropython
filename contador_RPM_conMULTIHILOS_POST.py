@@ -4,6 +4,7 @@ import machine
 import urequests
 import gc
 import esp
+import _thread
 
 global entrada
 global salida
@@ -11,6 +12,7 @@ global cont
 global continuar
 global sensor1
 global sensor2
+global rpm
 
 entrada=0
 salida=0
@@ -56,7 +58,45 @@ def blink():
     utime.sleep(0.5)                         # FUNCION que hace titilar el led cuando el algoritmo envia datos
     led.off()
     utime.sleep(1)
+   
+def encoder(pin):
+    global paso
+    paso += 1
     
+def hilo_conteo_rpm():
+    global paso
+    global rpm
+    paso = 0
+    
+    frecuency=1000
+    sentido=True
+    
+    encoder= machine.Pin(14,machine.Pin.IN)
+    encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder)
+    
+    timer_start= utime.ticks_ms()
+    
+    while True:
+        
+        #usando unicamente retardo
+#         utime.sleep_ms(1000)
+#         state= machine.disable_irq()
+#         rpm=(paso*60)/2
+#         paso=0
+#         print(rpm,'RPM')
+#         machine.enable_irq(state)
+
+        timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
+        if timer_elapsed >= 1000:
+            #calculo las rpm
+            state= machine.disable_irq()
+            rpm = (paso*60)/2
+            paso=0
+            machine.enable_irq(state)
+            timer_start= utime.ticks_ms()
+            print(rpm,'RPM')
+_thread.start_new_thread(hilo_conteo_rpm,())   
+   
 def hilo_conteo():                          #  <<<< bucle while de trabajo de MULTI-HILO >>>>
     global entrada
     global salida
@@ -191,8 +231,8 @@ while (continuar1):                              #  <<<< bucle while principal >
         
         temperatura=int(sensor1.value())            # sensa el estado del pin 22
         humedad=int(sensor2.value())            # sensa el estado del pin 23
-        print("sensor1: "+str(temperatura)+)
-        print("sensor2: "  +str(humedad)+)
+        print("sensor1: "+str(temperatura))
+        print("sensor2: "  +str(humedad))
         utime.sleep(1)
                              
         
