@@ -97,6 +97,7 @@ def hilo_conteo_produccion():
     global prod_minuto
     paso = 0
     conteo = 0
+    prod_minuto = 0
     
     encoder= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_UP)
     #encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
@@ -114,12 +115,12 @@ def hilo_conteo_produccion():
 #         machine.enable_irq(state)
 
         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
-        if timer_elapsed >= 9000:
+        if timer_elapsed >= 5000:  #  ===>>>  cuenta durante 5 minutos
             #calculo las rpm
             state= machine.disable_irq()
             
             prod = paso
-            prod_minuto = paso/60
+            prod_minuto = (paso*60)/5
             
             paso=0
             machine.enable_irq(state)
@@ -213,7 +214,10 @@ while (continuar1):                              #  <<<< bucle while principal >
         
         dato_tarjeta='tarjeta5'                     #       <<<==========   nombre de la tarjeta desde donde se envian los datos      
         #################################### sensor dht #####################################
-        utime.sleep(10)
+        #utime.sleep(10)
+        if ((conteo=='') | (prod_minuto=='')):
+            conteo=0
+            prod_minuto=0
         temperatura= conteo           # sensa el estado del pin 22
         humedad= prod_minuto             # sensa el estado del pin 23
         #temperatura= 5           # sensa el estado del pin 22
