@@ -272,4 +272,3 @@ while (continuar1):                              #  <<<< bucle while principal >
                 contador=0                                     # vuelve a cero el contador de envios fallidos
 ###########################################################################################################################  
         wdt.feed()                               # <<<<====  activa el impulso para el watchdog timer "IMPORTANTISIMO", fin del programa
-
