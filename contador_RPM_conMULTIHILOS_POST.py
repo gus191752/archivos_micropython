@@ -6,29 +6,18 @@ import gc
 import esp
 import _thread
 
-global entrada
-global salida
-global cont
 global continuar
-global sensor1
-global sensor2
 global rpm
-
-entrada=0
-salida=0
-cont=0
+global prod
+global prod_minuto
+global paso
+global conteo
 
 conexion = network.WLAN(network.STA_IF)  ## crea objeto de la conexion wifi
 gc.enable()                              ## habilita el recolector de basura, limpia la memoria ram del esp32
 esp.osdebug(None)                        ## funcion avanzada para la deteccion de errores que no usaremos
 wdt=machine.WDT(timeout=90000)           ## WATCHODOG TIMER, si el sistema no lo alimenta en el tiempo estipulado reinicia la aplicacion
 led = machine.Pin(2,machine.Pin.OUT)     ## habilita el pin 2 como salida para el led indicador
-
-
-boton_sensor1= machine.Pin(22,machine.Pin.IN,machine.Pin.PULL_UP)        # entrada de señales por PULL-UP
-boton_sensor2= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_UP)           # entrada de señales por PULL-UP
-boton_continuar_hilo=machine.Pin(21,machine.Pin.IN,machine.Pin.PULL_UP)
-
 
 def conexion_wifi():                                   #FUNCION de conexion al wifi
     try:
@@ -59,22 +48,59 @@ def blink():
     utime.sleep(0.5)                         # FUNCION que hace titilar el led cuando el algoritmo envia datos
     led.off()
     utime.sleep(1)
-   
-def encoder(pin):
+    
+############################# Interrupcion en el pin 14 ######################################
+def encoder_handler(pin):
     global paso
+    global conteo
     paso += 1
+    conteo +=1
     
-def hilo_conteo_rpm():
+############################ Multi_Hilo para contar las RPM ##################################       
+# def hilo_conteo_rpm():
+#     global paso
+#     global rpm
+#     paso = 0
+#     
+#     frecuency=1000    
+#     encoder= machine.Pin(14,machine.Pin.IN)
+#     encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder)
+#     
+#     timer_start= utime.ticks_ms()
+#     
+#     while True:
+#         
+#         #usando unicamente retardo
+# #         utime.sleep_ms(1000)
+# #         state= machine.disable_irq()
+# #         rpm=(paso*60)/2
+# #         paso=0
+# #         print(rpm,'RPM')
+# #         machine.enable_irq(state)
+# 
+#         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
+#         if timer_elapsed >= 1000:
+#             #calculo las rpm
+#             state= machine.disable_irq()
+#             rpm = (paso*60)/2
+#             paso=0
+#             machine.enable_irq(state)
+#             timer_start= utime.ticks_ms()
+#             print(rpm,'RPM')
+# _thread.start_new_thread(hilo_conteo_rpm,())  
+
+############################## Multi_Hilo para contar la produccion ############################
+def hilo_conteo_produccion():
     global paso
-    global rpm
+    global conteo
+    global prod
+    global prod_minuto
     paso = 0
+    conteo = 0
     
-    frecuency=1000
-    sentido=True
-    
-    encoder= machine.Pin(14,machine.Pin.IN)
-    encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder)
-    
+    encoder= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_UP)
+    #encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
+    encoder.irq(trigger=machine.Pin.IRQ_RISING, handler=encoder_handler)
     timer_start= utime.ticks_ms()
     
     while True:
@@ -88,62 +114,20 @@ def hilo_conteo_rpm():
 #         machine.enable_irq(state)
 
         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
-        if timer_elapsed >= 1000:
+        if timer_elapsed >= 9000:
             #calculo las rpm
             state= machine.disable_irq()
-            rpm = (paso*60)/2
+            
+            prod = paso
+            prod_minuto = paso/60
+            
             paso=0
             machine.enable_irq(state)
             timer_start= utime.ticks_ms()
-            print(rpm,'RPM')
-_thread.start_new_thread(hilo_conteo_rpm,())   
-   
-# def hilo_conteo():                          #  <<<< bucle while de trabajo de MULTI-HILO >>>>
-#     global entrada
-#     global salida
-#     global cont
-#     global sensor1
-#     global sensor2
-#    
-#     while (True):
-#         sensor1=int(boton_sensor1.value())          # sensa el estado del pin 22
-#         sensor2=int(boton_sensor2.value())                # sensa el estado del pin 23        
-#         utime.sleep(0.1)
-#         if (sensor1==0 and salida==0):
-#             entrada=1
-#         if (entrada==1 and sensor2==0):
-#             utime.sleep(0.5)
-#             print("entrando")
-#             print("*******************")
-#             entrada=0
-#             salida=0
-#             sensor1=1
-#             sensor2=1
-#             cont+=1
-#             print("cont: " + str(cont))
-#             print("sensor1= "+str(sensor1))
-#             print("sensor2= "+str(sensor2))
-#             print("entrada= "+str(entrada))
-#             print("salida= "+str(salida))
-#             
-#         if (sensor2==0 and entrada==0):
-#             salida=1
-#         if (salida==1 and sensor1==0):
-#             utime.sleep(0.5)
-#             print("saliendo")
-#             print("-----------------")
-#             entrada=0
-#             salida=0
-#             sensor1=1
-#             sensor2=1
-#             cont-=1
-#             print("cont: " + str(cont))
-#             print("sensor1= "+str(sensor1))
-#             print("sensor2= "+str(sensor2))
-#             print("entrada= "+str(entrada))
-#             print("salida= "+str(salida))
-# _thread.start_new_thread(hilo_conteo,())
-
+            #print(prod,'botellas')
+            #print(prod_minuto,'botellas/minuto')
+            #print(conteo,'conteo')
+_thread.start_new_thread(hilo_conteo_produccion,())
 ###########################################################################################################    
 
 global continuar1                                     # se declaran las variables
@@ -229,51 +213,25 @@ while (continuar1):                              #  <<<< bucle while principal >
         
         dato_tarjeta='tarjeta5'                     #       <<<==========   nombre de la tarjeta desde donde se envian los datos      
         #################################### sensor dht #####################################
-#         s.measure()
-#         temperatura= s.temperature()
-#         humedad= s.humidity()
-#         print("temperatura: "+str(temperatura)+"°C")
-#         print("humedad relativa: "  +str(humedad)+"%")
-#         utime.sleep(1)
+        utime.sleep(10)
+        temperatura= conteo           # sensa el estado del pin 22
+        humedad= prod_minuto             # sensa el estado del pin 23
+        #temperatura= 5           # sensa el estado del pin 22
+        #humedad= 6 
         
-        temperatura=5            # sensa el estado del pin 22
-        humedad=rpm             # sensa el estado del pin 23
-        print("sensor1: "+str(temperatura))
-        print("sensor2: "  +str(humedad))
-        utime.sleep(1)
-                         
-        
-        
+        print("produccion: "+str(temperatura))
+        print("produccion_minuto : "  +str(humedad))
+        #utime.sleep(10)
+                              
         #####################################################################################
         gc.collect()                                # limpia la basura de la memoria ram
         print(gc. mem_free ( ))                     # imprime cuanta memoria hay disponible
         
         blink()                                     # hace destellar el led de la tarjeta
-########################################################  METODO GET  #########################################       
-#         try:
-#             print("realizando peticion GET")            
-#             peticion=urequests.get('https://ingenieriamcy.000webhostapp.com/prueba_recibe2.php')  # envia la solicitud a la pagina indicada
-#             utime.sleep(10)
-#             print(peticion.status_code)                                                          # codigo de respuesta de la pagina
-#             print(peticion.text)                                                                 # sin esta linea el codigo da error
-#         except:
-#             print("====>no hay respuesta GET")
-#             contador2=contador2+1
-#             print(str(contador2) + " de intentos de solicitud fallida")            
-#             if ((contador2)>4):
-#                 print("...reiniciando conexion")
-#                 conexion.disconnect()
-#                 utime.sleep(10)
-#                 continuar2=False
-#                 contador2=0            
+        
 ######################################################### METODO POST  #####################################################################
         try: 
-            #dato= ('&device_label='+ str(dato_tarjeta) + '&chiller='+ str(chiller) + '&ascensor1='+ str(asc1) + '&planta_sur='+ str(humedad) + '&temperature='+str(temperatura)+ '&compresor1_chiller1='+ str(compresor1_chiller1) + '&compresor2_chiller1='+ str(compresor2_chiller1) + '&compresor3_chiller1='+ str(compresor3_chiller1) +'&flujo_chiller1='+ str(flujo_chiller1) + '&temperatura_chiller1='+str(temperatura_chiller1)+ '&energizado_asc_corp='+ str(energizado_asc_corp) +'&funcionamiento_asc_corp='+ str(funcionamiento_asc_corp) + '&falla_asc_corp='+str(falla_asc_corp))  # datos a enviar al formulario del host
-#             dato= ('&device_label='+ str(dato_tarjeta) + '&chiller='+ str(chiller) + '&ascensor1='+ str(asc1) + '&planta_sur='+ str(planta) + '&temperature='+str(temperatura)+
-#                    '&compresor1_chiller1='+ str(compresor1_chiller1) + '&compresor2_chiller1='+ str(compresor2_chiller1) + '&compresor3_chiller1='+ str(compresor3_chiller1) +'&flujo_chiller1='+ str(flujo_chiller1) + '&temperatura_chiller1='+str(temperatura_chiller1)+
-#                    '&compresor1_chiller2='+ str(compresor1_chiller2) + '&compresor2_chiller2='+ str(compresor2_chiller2) + '&compresor3_chiller2='+ str(compresor3_chiller2) +'&flujo_chiller2='+ str(flujo_chiller2) + '&switch_chiller2='+str(switch_chiller2)+'&corpoelec_440v='+str(corpoelec_440v) +
-#                    '&energizado_asc_corp='+ str(energizado_asc_corp) + '&funcionamiento_asc_corp='+ str(funcionamiento_asc_corp) + '&falla_asc_corp='+str(falla_asc_corp))
-#
+
             dato= ('&device_label='+ str(dato_tarjeta) + '&compresor1_chiller1='+ str(compresor1_chiller1) + '&compresor2_chiller1='+ str(compresor2_chiller1) + '&compresor3_chiller1='+ str(compresor3_chiller1) +'&flujo_chiller1='+ str(flujo_chiller1) + '&temperatura_chiller1='+str(temperatura_chiller1) +
                    '&compresor1_chiller2='+ str(compresor1_chiller2) + '&compresor2_chiller2='+ str(compresor2_chiller2) + '&compresor3_chiller2='+ str(compresor3_chiller2) +'&flujo_chiller2='+ str(flujo_chiller2) + '&switch_chiller2='+str(switch_chiller2)+'&corpoelec_440v='+str(corpoelec_440v) +
                    '&switch_bomba1_chiller='+str(switch_bomba1_chiller)+'&motor_bomba1_chiller='+str(motor_bomba1_chiller) + '&falla_bomba1_chiller='+str(falla_bomba1_chiller) + '&switch_bomba2_chiller='+str(switch_bomba2_chiller) + '&motor_bomba2_chiller='+str(motor_bomba2_chiller) + '&falla_bomba2_chiller='+str(falla_bomba2_chiller) + '&switch_bomba3_chiller='+str(switch_bomba3_chiller) + '&motor_bomba3_chiller='+str(motor_bomba3_chiller) + '&falla_bomba3_chiller='+str(falla_bomba3_chiller) +
@@ -287,9 +245,7 @@ while (continuar1):                              #  <<<< bucle while principal >
                    '&energizado_asc_carganorte='+str(energizado_asc_carganorte) + '&funcionamiento_asc_carganorte='+str(funcionamiento_asc_carganorte) + '&falla_asc_carganorte='+str(falla_asc_carganorte) +
                    '&reloj_uma_sala17='+str(reloj_uma_sala17) + '&motor_uma_sala17='+str(motor_uma_sala17) + '&falla_uma_sala17='+str(falla_uma_sala17)
                    )
-         
-            
-            
+                     
             datos=dato
             print("realizando peticion POST")
             cabezera={'Content-Type':'application/x-www-form-urlencoded'}    # cabezera de la pagina a enviar los datos del formulario                                                                                                                    # tiempo de muestreo
