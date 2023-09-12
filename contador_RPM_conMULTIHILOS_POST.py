@@ -57,51 +57,18 @@ def encoder_handler(pin):
     conteo +=1
     
 ############################ Multi_Hilo para contar las RPM ##################################       
-# def hilo_conteo_rpm():
-#     global paso
-#     global rpm
-#     paso = 0
-#     
-#     frecuency=1000    
-#     encoder= machine.Pin(14,machine.Pin.IN)
-#     encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder)
-#     
-#     timer_start= utime.ticks_ms()
-#     
-#     while True:
-#         
-#         #usando unicamente retardo
-# #         utime.sleep_ms(1000)
-# #         state= machine.disable_irq()
-# #         rpm=(paso*60)/2
-# #         paso=0
-# #         print(rpm,'RPM')
-# #         machine.enable_irq(state)
-# 
-#         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
-#         if timer_elapsed >= 1000:
-#             #calculo las rpm
-#             state= machine.disable_irq()
-#             rpm = (paso*60)/2
-#             paso=0
-#             machine.enable_irq(state)
-#             timer_start= utime.ticks_ms()
-#             print(rpm,'RPM')
-# _thread.start_new_thread(hilo_conteo_rpm,())  
-
-############################## Multi_Hilo para contar la produccion ############################
-def hilo_conteo_produccion():
+def hilo_conteo_rpm():
     global paso
+    global rpm
     global conteo
-    global prod
     global prod_minuto
     paso = 0
-    conteo = 0
-    prod_minuto = 0
-    
+    conteo=0
+    prod_minuto=0
+       
     encoder= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_UP)
-    #encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
-    encoder.irq(trigger=machine.Pin.IRQ_RISING, handler=encoder_handler)
+    encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
+    
     timer_start= utime.ticks_ms()
     
     while True:
@@ -115,20 +82,59 @@ def hilo_conteo_produccion():
 #         machine.enable_irq(state)
 
         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
-        if timer_elapsed >= 5000:  #  ===>>>  cuenta durante 5 minutos
+        if timer_elapsed >= 1000:
             #calculo las rpm
             state= machine.disable_irq()
-            
-            prod = paso
-            prod_minuto = (paso*60)/5
-            
+            rpm = (paso*60)/1024
+            conteo=paso
             paso=0
             machine.enable_irq(state)
             timer_start= utime.ticks_ms()
-            #print(prod,'botellas')
-            #print(prod_minuto,'botellas/minuto')
-            #print(conteo,'conteo')
-_thread.start_new_thread(hilo_conteo_produccion,())
+            print(rpm,'RPM')
+            print(conteo,'pulsos')
+_thread.start_new_thread(hilo_conteo_rpm,())  
+
+############################## Multi_Hilo para contar la produccion ############################
+# def hilo_conteo_produccion():
+#     global paso
+#     global conteo
+#     global prod
+#     global prod_minuto
+#     paso = 0
+#     conteo = 0
+#     prod_minuto = 0
+#     
+#     encoder= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_UP)
+#     #encoder= machine.Pin(23,machine.Pin.IN,machine.Pin.PULL_DOWN)
+#     #encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
+#     encoder.irq(trigger=machine.Pin.IRQ_RISING, handler=encoder_handler)
+#     timer_start= utime.ticks_ms()
+#     
+#     while True:
+#         
+#         #usando unicamente retardo
+# #         utime.sleep_ms(1000)
+# #         state= machine.disable_irq()
+# #         rpm=(paso*60)/2
+# #         paso=0
+# #         print(rpm,'RPM')
+# #         machine.enable_irq(state)
+# 
+#         timer_elapsed = utime.ticks_diff(utime.ticks_ms(),timer_start)
+#         if timer_elapsed >= 1000:  #  ===>>>  cuenta durante 5 minutos
+#             #calculo las rpm
+#             state= machine.disable_irq()
+#             
+#             prod = paso
+#             prod_minuto = (paso*60)
+#             
+#             paso=0
+#             machine.enable_irq(state)
+#             timer_start= utime.ticks_ms()
+#             #print(prod,'botellas')
+#             #print(prod_minuto,'botellas/minuto')
+#             #print(conteo,'conteo')
+# _thread.start_new_thread(hilo_conteo_produccion,())
 ###########################################################################################################    
 
 global continuar1                                     # se declaran las variables
@@ -215,10 +221,13 @@ while (continuar1):                              #  <<<< bucle while principal >
         dato_tarjeta='tarjeta5'                     #       <<<==========   nombre de la tarjeta desde donde se envian los datos      
         #################################### sensor dht #####################################
         #utime.sleep(10)
-        if ((conteo=='') | (prod_minuto=='')):
-            conteo=0
+        #if ((conteo=='') | (prod_minuto=='')):
+        #    conteo=0
+        if ((rpm=='') | (rpm=='')):
+            rpm=0
             prod_minuto=0
-        temperatura= conteo           # sensa el estado del pin 22
+        #temperatura= conteo           # sensa el estado del pin 22
+        temperatura= float(rpm)           # sensa el estado del pin 22
         humedad= prod_minuto             # sensa el estado del pin 23
         #temperatura= 5           # sensa el estado del pin 22
         #humedad= 6 
