@@ -14,7 +14,7 @@ buffer_ = ""
 
 #   Creamos el bucle para probar el funcionamienta de RX y TX
 while True:
-    time.sleep_ms(1000)
+    time.sleep(2)
     #   Enviamos por TX
     Puerto_1.write('Texto de salida')
 
